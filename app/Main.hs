@@ -5,7 +5,7 @@
 module Main where
 import Prelude hiding (Bool)
 import Prelude.Compat
-import Data.Aeson
+import Data.Aeson ( object, Key, Value(String), toJSON)
 import Data.Aeson.Types
 import Data.Scientific
 
@@ -31,11 +31,11 @@ buildPairList [] = []
 buildPairList [x] = [(k, v)]
   where 
     k = fromString $ head x
-    v = String $ pack $ last x
+    v = toJSON $ pack $ last x
 buildPairList (x:xs) = (k, v) : buildPairList xs
   where 
     k = fromString $ head x
-    v = String $ pack $ last x
+    v = toJSON $ pack $ last x
 
 main :: IO ()
 main = do
