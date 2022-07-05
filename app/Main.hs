@@ -1,22 +1,31 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 import Prelude hiding (Bool)
 import Prelude.Compat
-import Data.Aeson ( object, Key, Value(String), toJSON)
+import Data.Aeson ( object, Key, Value(String), toJSON, decode)
 import Data.Aeson.Types
 import Data.Scientific
 
 import Control.Applicative (empty)
 import qualified Data.ByteString.Lazy.Char8 as BL
+import Data.ByteString.Lazy.Char8 (unpack, toStrict)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import System.Environment (getArgs)
 import Data.List.Split ( split, splitOn )
 import Data.Aeson.Encoding (pair)
-import Data.Text (pack)
+import Data.Text (pack, Text)
+import Data.Text.Encoding ( decodeASCII, decodeUtf8 )
 import Data.Aeson.Key
+import GHC.Base
+import Data.Maybe
+import Text.Read (readMaybe)
+import qualified Data.ByteString
+import qualified Data.ByteString.Lazy
+import qualified Data.Text.Encoding as Data.Text.IO
+import qualified Data.Text.Encoding as Data.Text
+import qualified Data.Text.Encoding as Data.Text.Lazy
 -- import System.Posix.Env.ByteString (getArgs)
 -- import Data.ByteString (split, ByteString)
 -- import Data.ByteString.Lazy (toChunks)
@@ -29,13 +38,25 @@ splitArgs delim (x:xs) = splitOn delim x : splitArgs delim xs
 buildPairList :: [[String]] -> [(Key, Value)]
 buildPairList [] = []
 buildPairList [x] = [(k, v)]
-  where 
+  where
     k = fromString $ head x
-    v = toJSON $ pack $ last x
+    v = toValue $ BL.pack $ last x
 buildPairList (x:xs) = (k, v) : buildPairList xs
-  where 
+  where
     k = fromString $ head x
-    v = toJSON $ pack $ last x
+    v = toValue $ BL.pack $ last x
+
+-- toValue :: BL.ByteString -> Value
+toValue :: BL.ByteString -> Value
+toValue x = case decode x of
+              Just x -> x
+              Nothing -> toJSON $ lazyToText x
+
+-- convert from lazy bytestring to text
+lazyToText :: Data.ByteString.Lazy.ByteString -> Text
+lazyToText = Data.Text.decodeUtf8 . Data.ByteString.concat . BL.toChunks
+
+
 
 main :: IO ()
 main = do
