@@ -1,5 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use camelCase" #-}
 
 module Main where
 import Prelude hiding (Bool)
@@ -45,7 +47,6 @@ buildPairList (x:xs) = (k, v) : buildPairList xs
   where
     k = fromString $ head x
     v = toValue $ BL.pack $ last x
-
 -- toValue :: BL.ByteString -> Value
 toValue :: BL.ByteString -> Value
 toValue x = case decode x of
@@ -56,12 +57,34 @@ toValue x = case decode x of
 lazyToText :: Data.ByteString.Lazy.ByteString -> Text
 lazyToText = Data.Text.decodeUtf8 . Data.ByteString.concat . BL.toChunks
 
+-- remove flags from the args list.  
+-- args: args, flags, rest
+flagList :: [String]
+flagList = ["-a", "-B", "-D", "-e", "-n", "-p", "-v", "-V"]
 
+-- splitFlags :: ([a], [a], [a]) -> ([a], [a])
+splitFlags :: ([String], [String], [String]) -> ([a], [String], [String])
+splitFlags ([], flags, rest) = ([], flags, rest)
+splitFlags ([x], flags, rest) = if x `elem` flagList then splitFlags ([], x : flags, rest) else splitFlags ([], flags, x : rest)
+splitFlags (x:xs, flags, rest) = if x `elem` flagList then splitFlags (xs, x : flags, rest) else splitFlags (xs, flags, x : rest)
+
+getFlagsAfterSplit :: (a, b, c) -> b
+getFlagsAfterSplit (_, x, _) = x
+
+getArgsAfterSplit :: (a, b, c) -> c
+getArgsAfterSplit (_, _, x) = x
 
 main :: IO ()
 main = do
   -- get the args from the command line
-  args <- getArgs
+  args_ <- getArgs
+
+  let result = splitFlags (args_, [], [])
+  let flags = getFlagsAfterSplit result
+  let args = getArgsAfterSplit result
+
+  print flags
+  print args
 
   -- define a delim
   let delim = "="
