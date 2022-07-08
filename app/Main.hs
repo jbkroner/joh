@@ -30,9 +30,6 @@ import qualified Data.Text.Encoding as Data.Text
 import qualified Data.Text.Encoding as Data.Text.Lazy
 import qualified Control.Monad
 import System.Exit (exitWith, exitFailure, exitSuccess, die)
--- import System.Posix.Env.ByteString (getArgs)
--- import Data.ByteString (split, ByteString)
--- import Data.ByteString.Lazy (toChunks)
 
 version :: String
 version = "1.0.0"
