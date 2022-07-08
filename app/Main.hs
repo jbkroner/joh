@@ -115,7 +115,7 @@ main = do
       let o = object listOfPairs
       if "-p" `elem` flags then do
         BL.putStrLn $ encodePretty o
-      else do 
+      else do
         BL.putStrLn $ encode o
     else do
       die "error, no data passed in and -e flag not set"
