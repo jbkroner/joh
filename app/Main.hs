@@ -6,7 +6,7 @@
 module Main where
 import Prelude hiding (Bool)
 import Prelude.Compat
-import Data.Aeson ( object, Key, Value(String), toJSON, decode)
+import Data.Aeson ( object, Key, Value(String), toJSON, decode, encode)
 import Data.Aeson.Types
 import Data.Scientific
 
@@ -28,9 +28,38 @@ import qualified Data.ByteString.Lazy
 import qualified Data.Text.Encoding as Data.Text.IO
 import qualified Data.Text.Encoding as Data.Text
 import qualified Data.Text.Encoding as Data.Text.Lazy
+import qualified Control.Monad
+import System.Exit (exitWith, exitFailure, exitSuccess, die)
 -- import System.Posix.Env.ByteString (getArgs)
 -- import Data.ByteString (split, ByteString)
 -- import Data.ByteString.Lazy (toChunks)
+
+version :: String
+version = "1.0.0"
+
+jsonVersionPair :: (Key, Value)
+jsonVersionPair = ("version", toValue $ BL.pack version)
+
+delim :: String
+delim = "="
+
+argsData :: [(String, String)]
+argsData = [("-a", "return args in a list. joh -a 1 2 3 -> [1,2,3]"), -- TODO
+            ("-B", "Disable boolean and null interpretation"), -- TODO
+            ("-D", "Deduplicate object keys"), -- TODO
+            ("-e", "Ignore empty stdin"),
+            ("-n", "Do not add keys with empty values "), -- TODO
+            ("-p", "Pretty-print the JSON string on output instead of terse one-line"),
+            ("-v", "show version and exit"),
+            ("-V", "show version as a JSON object and exit"),
+            ("-H", "print the help text")] -- TODO pretty print this
+
+-- list of cli flags to check for later
+flagList :: [String]
+flagList = map fst argsData
+
+helpText :: [String]
+helpText = map snd argsData
 
 splitArgs :: Eq a => [a] -> [[a]] -> [[[a]]]
 splitArgs delim [] = []
@@ -57,11 +86,6 @@ toValue x = case decode x of
 lazyToText :: Data.ByteString.Lazy.ByteString -> Text
 lazyToText = Data.Text.decodeUtf8 . Data.ByteString.concat . BL.toChunks
 
--- remove flags from the args list.  
--- args: args, flags, rest
-flagList :: [String]
-flagList = ["-a", "-B", "-D", "-e", "-n", "-p", "-v", "-V"]
-
 -- splitFlags :: ([a], [a], [a]) -> ([a], [a])
 splitFlags :: ([String], [String], [String]) -> ([a], [String], [String])
 splitFlags ([], flags, rest) = ([], flags, rest)
@@ -76,25 +100,29 @@ getArgsAfterSplit (_, _, x) = x
 
 main :: IO ()
 main = do
-  -- get the args from the command line
   args_ <- getArgs
 
   let result = splitFlags (args_, [], [])
   let flags = getFlagsAfterSplit result
   let args = getArgsAfterSplit result
 
-  print flags
-  print args
-
-  -- define a delim
-  let delim = "="
-
-  -- split this into a list of pairs
-  let listOfPairs = buildPairList $ splitArgs delim args
-
-  let o = object listOfPairs
-
-  BL.putStrLn $ encodePretty o
+  if "-H" `elem` flags then do
+    print argsData
+  else if "-v" `elem` flags then do
+    print ("joh json encoder version " ++ version)
+  else if "-V" `elem` flags then do
+    BL.putStrLn $ encode $ object [jsonVersionPair]
+  else do
+    if not (null args) || "-e" `elem` flags then do
+      let listOfPairs = buildPairList $ splitArgs delim args
+      let o = object listOfPairs
+      if "-p" `elem` flags then do
+        BL.putStrLn $ encodePretty o
+      else do 
+        BL.putStrLn $ encode o
+    else do
+      die "error, no data passed in and -e flag not set"
+    exitSuccess
 
   -- old test driver code below
 
