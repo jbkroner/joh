@@ -42,7 +42,7 @@ delim :: String
 delim = "="
 
 argsData :: [(String, String)]
-argsData = [("-a", "return args in a list. joh -a 1 2 3 -> [1,2,3]"), -- TODO
+argsData = [("-a", "return args in a list. joh -a 1 2 3 -> [1,2,3]"),
             ("-B", "Disable boolean and null interpretation"), -- TODO
             ("-D", "Deduplicate object keys"), -- TODO
             ("-e", "Ignore empty stdin"),
