@@ -7,7 +7,7 @@ module Main where
 import Prelude hiding (Bool)
 import Prelude.Compat
 import Data.Aeson ( object, Key, Value(String), toJSON, decode, encode)
-import Data.Aeson.Types
+import Data.Aeson.Types ( object, Key, Value, ToJSON(toJSON))
 import Data.Scientific
 
 import Control.Applicative (empty)
@@ -30,6 +30,7 @@ import qualified Data.Text.Encoding as Data.Text
 import qualified Data.Text.Encoding as Data.Text.Lazy
 import qualified Control.Monad
 import System.Exit (exitWith, exitFailure, exitSuccess, die)
+import qualified Data.ByteString as Bl
 
 version :: String
 version = "1.0.0"
@@ -79,6 +80,9 @@ toValue x = case decode x of
               Just x -> x
               Nothing -> toJSON $ lazyToText x
 
+toValueList :: [[Char]] -> [Value]
+toValueList args = [toValue $ BL.pack x | x <- args]
+
 -- convert from lazy bytestring to text
 lazyToText :: Data.ByteString.Lazy.ByteString -> Text
 lazyToText = Data.Text.decodeUtf8 . Data.ByteString.concat . BL.toChunks
@@ -109,6 +113,8 @@ main = do
     print ("joh json encoder version " ++ version)
   else if "-V" `elem` flags then do
     BL.putStrLn $ encode $ object [jsonVersionPair]
+  else if "-a" `elem` flags then do
+    print $ encode $ toValueList args
   else do
     if not (null args) || "-e" `elem` flags then do
       let listOfPairs = buildPairList $ splitArgs delim args
