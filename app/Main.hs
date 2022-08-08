@@ -13,7 +13,7 @@ import Data.Scientific
 import Control.Applicative (empty)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.ByteString.Lazy.Char8 (unpack, toStrict)
-import Data.Aeson.Encode.Pretty (encodePretty)
+import Data.Aeson.Encode.Pretty (encodePretty, Config (confIndent), defConfig, Indent (Spaces), encodePretty')
 import System.Environment (getArgs)
 import Data.List.Split ( split, splitOn )
 import Data.Aeson.Encoding (pair)
@@ -40,6 +40,10 @@ jsonVersionPair = ("version", toValue $ BL.pack version)
 
 delim :: String
 delim = "="
+
+config = defConfig
+     { confIndent = Spaces 3
+     }
 
 argsData :: [(String, String)]
 argsData = [("-a", "return args in a list. joh -a 1 2 3 -> [1,2,3]"),
@@ -81,7 +85,11 @@ toValue x = case decode x of
               Nothing -> toJSON $ lazyToText x
 
 toValueList :: [[Char]] -> [Value]
-toValueList args = [toValue $ BL.pack x | x <- args]
+toValueList args = reverse $ [toValue $ BL.pack x | x <- args]
+
+-- take a list of values and turn it into an aeson list
+-- toAesonlist :: [Value] -> Value
+-- toAesonlist l = l
 
 -- convert from lazy bytestring to text
 lazyToText :: Data.ByteString.Lazy.ByteString -> Text
@@ -114,13 +122,13 @@ main = do
   else if "-V" `elem` flags then do
     BL.putStrLn $ encode $ object [jsonVersionPair]
   else if "-a" `elem` flags then do
-    print $ encode $ toValueList args
+    BL.putStrLn $ encode $ toValueList args
   else do
     if not (null args) || "-e" `elem` flags then do
       let listOfPairs = buildPairList $ splitArgs delim args
       let o = object listOfPairs
       if "-p" `elem` flags then do
-        BL.putStrLn $ encodePretty o
+        BL.putStrLn $ encodePretty' config o -- encodePretty' can take a config value
       else do
         BL.putStrLn $ encode o
     else do
